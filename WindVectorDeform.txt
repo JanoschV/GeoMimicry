@@ -1,0 +1,118 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+using Rhino;
+using Rhino.Geometry;
+
+using Grasshopper;
+using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
+using Grasshopper.Kernel.Types;
+
+
+
+/// <summary>
+/// This class will be instantiated on demand by the Script component.
+/// </summary>
+public class Script_Instance : GH_ScriptInstance
+{
+#region Utility functions
+  /// <summary>Print a String to the [Out] Parameter of the Script component.</summary>
+  /// <param name="text">String to print.</param>
+  private void Print(string text) { /* Implementation hidden. */ }
+  /// <summary>Print a formatted String to the [Out] Parameter of the Script component.</summary>
+  /// <param name="format">String format.</param>
+  /// <param name="args">Formatting parameters.</param>
+  private void Print(string format, params object[] args) { /* Implementation hidden. */ }
+  /// <summary>Print useful information about an object instance to the [Out] Parameter of the Script component. </summary>
+  /// <param name="obj">Object instance to parse.</param>
+  private void Reflect(object obj) { /* Implementation hidden. */ }
+  /// <summary>Print the signatures of all the overloads of a specific method to the [Out] Parameter of the Script component. </summary>
+  /// <param name="obj">Object instance to parse.</param>
+  private void Reflect(object obj, string method_name) { /* Implementation hidden. */ }
+#endregion
+
+#region Members
+  /// <summary>Gets the current Rhino document.</summary>
+  private readonly RhinoDoc RhinoDocument;
+  /// <summary>Gets the Grasshopper document that owns this script.</summary>
+  private readonly GH_Document GrasshopperDocument;
+  /// <summary>Gets the Grasshopper script component that owns this script.</summary>
+  private readonly IGH_Component Component;
+  /// <summary>
+  /// Gets the current iteration count. The first call to RunScript() is associated with Iteration==0.
+  /// Any subsequent call within the same solution will increment the Iteration count.
+  /// </summary>
+  private readonly int Iteration;
+#endregion
+
+  /// <summary>
+  /// This procedure contains the user code. Input parameters are provided as regular arguments,
+  /// Output parameters as ref arguments. You don't have to assign output parameters,
+  /// they will have a default value.
+  /// </summary>
+  private void RunScript(bool reset, List<Point3d> towerPoints, Mesh tower, List<Vector3d> vectors, List<Vector3d> normals, List<double> magnitudes, double factor, ref object A, ref object B)
+  {
+
+
+    if(reset)
+    {
+      pts = new List<Point3d>();
+      towerpts = towerPoints;
+      angles = new List<double>();
+    }
+
+
+    for (int i = 0; i < towerPoints.Count; i++)
+    {
+      normals[i].Unitize();
+      vectors[i].Unitize();
+      // double angle = Vector3d.VectorAngle(normals[i], new Vector3d(0, 1, 0));
+      //angle = angle * (180 / Math.PI) + 0.1;
+      //if(angle > 90)
+      // angle = 90;
+      double norm = (normals[i].X * vectors[i].X) + (normals[i].Y * vectors[i].Y);
+      norm = (norm / normals[i].Y);
+      norm = Math.Abs(norm);
+
+      if(norm > 5)
+        norm = 5;
+      angles.Add(norm);
+      normals[i].Reverse();
+      Vector3d v = normals[i];
+      towerpts[i] += ((v * norm * factor * magnitudes[i]) / 10);
+
+    }
+    A = towerpts;
+    B = angles;
+
+  }
+
+  // <Custom additional code> 
+  List<Point3d> pts;
+  List<Point3d> towerpts;
+  List<double> angles;
+
+
+  public int nearestPoint(Point3d pt, List<Point3d> pts)
+  {
+    double dist = 1000;
+    int index = 0;
+
+    for (int i = 0; i < pts.Count; i++)
+    {
+      double comparison = pt.DistanceToSquared(pts[i]);
+      if(comparison < dist)
+      {
+        dist = comparison;
+        index = i;
+      }
+
+    }
+    return index;
+
+
+  }
+  // </Custom additional code> 
+}
